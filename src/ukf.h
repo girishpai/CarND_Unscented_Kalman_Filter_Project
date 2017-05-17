@@ -84,6 +84,9 @@ public:
    */
   virtual ~UKF();
 
+
+
+  
   /**
    * ProcessMeasurement
    * @param meas_package The latest measurement data of either radar or laser
@@ -108,6 +111,28 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+ private :
+
+  /*
+   * Generate Augmented Sigma Points
+   */
+  void AugmentedSigmaPoints(MatrixXd* Xsig_out, VectorXd x,MatrixXd P);
+
+  /*
+   * Sigma Point Prediction (Transformation)
+   */
+  void SigmaPointPrediction(MatrixXd Xsig_aug,MatrixXd* Xsig_out);
+
+  /*
+    Predict Mean and Covariance of the Predicted State
+  */
+  void PredictMeanAndCovariance(MatrixXd Xsig_pred,VectorXd* x_out, MatrixXd* P_out);
+  
+  
+
+  
+  
 };
 
 #endif /* UKF_H */
