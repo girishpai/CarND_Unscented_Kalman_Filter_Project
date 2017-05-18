@@ -122,12 +122,12 @@ public:
   /*
    * Sigma Point Prediction (Transformation)
    */
-  void SigmaPointPrediction(MatrixXd Xsig_aug,MatrixXd* Xsig_out);
+  void SigmaPointPrediction(MatrixXd Xsig_aug,double delta_t);
 
   /*
     Predict Mean and Covariance of the Predicted State
   */
-  void PredictMeanAndCovariance(MatrixXd Xsig_pred,VectorXd* x_out, MatrixXd* P_out);
+  void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
   
   
 

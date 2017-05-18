@@ -70,6 +70,8 @@ UKF::UKF() {
 
   // Sigma point spreading parameter
   lambda_ = 3 - n_aug_;
+
+  Xsig_pred_ = MatrixXd(n_x_, 2 * n_aug_ + 1);
 }
 
 UKF::~UKF() {}
@@ -146,9 +148,9 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   MatrixXd Xsig_aug = MatrixXd(n_aug_,2 * n_aug_ + 1);
 
   //Create Augmented Mean State
-  x_aug.head(5) = x_;
-  x_aug(5) = 0; // Mean value of longitudinal acceleration noise is 0
-  x_aug(6) = 0;// Mean value of radial acceleration noise is 0
+  x_aug.head(n_x_) = x_;
+  x_aug(n_x_) = 0; // Mean value of longitudinal acceleration noise is 0
+  x_aug(n_x_ + 1) = 0;// Mean value of radial acceleration noise is 0
 
   //Create Augmented Covariance Matrix
   P_aug.fill(0.0);
@@ -167,4 +169,90 @@ void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
   }
   *Xsig_out = Xsig_aug;
 }
+
+/*
+ * Sigma Point Prediction
+ */
+void UKF::SigmaPointPrediction(MatrixXd Xsig_aug,double delta_t) {
+  for(int i = 0; i < 2 *n_aug_+1;i++) {
+    double p_x = Xsig_aug(0,i);
+    double p_y = Xsig_aug(1,i);
+    double v = Xsig_aug(0,2);
+    double yaw = Xsig_aug(3,i);
+    double yawd = Xsig_aug(4,i);
+    double nu_a = Xsig_aug(5,i);
+    double nu_yawdd = Xsig_aug(6,i);
+
+    //Predicted state values
+    double px_p, py_p;
+
+    //avoid division by zero
+    if (fabs(yawd) > 0.001) {
+        px_p = p_x + v/yawd * ( sin (yaw + yawd*delta_t) - sin(yaw));
+        py_p = p_y + v/yawd * ( cos(yaw) - cos(yaw+yawd*delta_t) );
+    }
+    else {
+        px_p = p_x + v*delta_t*cos(yaw);
+        py_p = p_y + v*delta_t*sin(yaw);
+    }
+
+    double v_p = v;
+    double yaw_p = yaw + yawd*delta_t;
+    double yawd_p = yawd;
+
+    //add noise
+    px_p = px_p + 0.5*nu_a*delta_t*delta_t * cos(yaw);
+    py_p = py_p + 0.5*nu_a*delta_t*delta_t * sin(yaw);
+    v_p = v_p + nu_a*delta_t;
+
+    yaw_p = yaw_p + 0.5*nu_yawdd*delta_t*delta_t;
+    yawd_p = yawd_p + nu_yawdd*delta_t;
+
+    //write predicted sigma point into right column
+    Xsig_pred_(0,i) = px_p;
+    Xsig_pred_(1,i) = py_p;
+    Xsig_pred_(2,i) = v_p;
+    Xsig_pred_(3,i) = yaw_p;
+    Xsig_pred_(4,i) = yawd_p;
+    
+  } 
+}
+
+/*
+  Mean and Covariance of the Predicted State
+ */
+void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
+
+  //Create Vector for Predicted state
+  VectorXd x = VectorXd(n_x_);
+
+  //Create covariance matrix for prediction
+  MatrixXd P = MatrixXd(n_x_,n_x_);
+
+  //Predicted state mean
+  x.fill(0.0);
+  for (int i = 0 ; i < 2 * n_aug_ + 1; i++) {
+    x = x + weights_(i) * Xsig_pred_.col(i);
+  }
+
+  //Predicted state covariance matrix
+  P.fill(0.0);
+  for(int i = 0; i < 2 * n_aug_ + 1;i++) {
+
+    // State Difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x;
+
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    P = P + weights_(i) * x_diff * x_diff.transpose() ; 
+  }
+  *x_out = x;
+  *P_out = P;
+}
+
+
+
+
 
