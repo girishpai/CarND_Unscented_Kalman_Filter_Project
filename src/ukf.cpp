@@ -130,3 +130,12 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   You'll also need to calculate the radar NIS.
   */
 }
+
+/*
+ * Generate Augmented Sigma Points
+ */
+void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+
+  
+}
+
