@@ -130,3 +130,41 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   You'll also need to calculate the radar NIS.
   */
 }
+
+/*
+ * Generate Augmented Sigma Points
+ */
+void UKF::AugmentedSigmaPoints(MatrixXd* Xsig_out) {
+
+  //Create Augmented Mean vector
+  VectorXd x_aug = VectorXd(n_aug_);
+
+  //Create Augmented State Covariance
+  MatrixXd P_aug = MatrixXd(n_aug_,n_aug_);
+
+  //Create Sigma Point Matrix
+  MatrixXd Xsig_aug = MatrixXd(n_aug_,2 * n_aug_ + 1);
+
+  //Create Augmented Mean State
+  x_aug.head(5) = x_;
+  x_aug(5) = 0; // Mean value of longitudinal acceleration noise is 0
+  x_aug(6) = 0;// Mean value of radial acceleration noise is 0
+
+  //Create Augmented Covariance Matrix
+  P_aug.fill(0.0);
+  P_aug.topLeftCorner(5,5) = P_;
+  P_aug(5,5) = std_a_ * std_a_;
+  P_aug(6,6) = std_yawdd_ * std_yawdd_;
+
+  //Create Square Root Matrix
+  MatrixXd L = P_aug.llt().matrixL();
+
+  //Create Augmented Sigma Points
+  Xsig_aug.col(0) = x_aug;
+  for(int i = 0; i < n_aug_ ; i++) {
+    Xsig_aug.col(i+1) = x_aug + sqrt(lambda_ + n_aug_) * L.col(i);
+    Xsig_aug.col(i+1+n_aug_) = x_aug - sqrt(lambda_ + n_aug_) * L.col(i);
+  }
+  *Xsig_out = Xsig_aug;
+}
+

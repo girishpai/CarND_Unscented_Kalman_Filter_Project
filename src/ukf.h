@@ -117,7 +117,7 @@ public:
   /*
    * Generate Augmented Sigma Points
    */
-  void AugmentedSigmaPoints(MatrixXd* Xsig_out, VectorXd x,MatrixXd P);
+  void AugmentedSigmaPoints(MatrixXd* Xsig_out);
 
   /*
    * Sigma Point Prediction (Transformation)
