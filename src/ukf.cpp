@@ -253,6 +253,155 @@ void UKF::PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out) {
 }
 
 
+/*
+ * Transform prediction to radar measurement space
+ */
+void UKF::PredictRadarMeasurement(VectorXd* z_out,MatrixXd* S_out,MatrixXd* Zsig_out) {
+
+  MatrixXd Zsig = MatrixXd(n_z_, 2 * n_aug_ + 1);
+
+  for(int i = 0; i < 2 * n_aug_ + 1; i++) {
+
+    double p_x = Xsig_pred_(0,i);
+    double p_y = Xsig_pred_(1,i);
+    double v = Xsig_pred_(2,i);
+    double yaw = Xsig_pred_(3,i);
+
+    double v1 = cos(yaw)*v;
+    double v2 = sin(yaw)*v;
+
+    //Measurement model
+    Zsig(0,i) = sqrt(p_x * p_x + p_y * p_y);
+    Zsig(1,i) = atan2(p_y,p_x);
+    Zsig(2,i) = (p_x * v1 + p_y * v2) / sqrt(p_x*p_x + p_y*p_y);
+  }
+
+  //Mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z_);
+  z_pred.fill(0.0);
+  for(int i = 0;i < 2 * n_aug_ + 1;i++) {
+    z_pred = z_pred + weights_(i) * Zsig.col(i);
+  }
+
+  //Measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z_,n_z_);
+  S.fill(0.0);
+  for(int i = 0; i < 2 * n_aug_ + 1; i++) {
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+
+    //angle normalization
+    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+    S = S + weights_(i) * z_diff * z_diff.transpose();
+  }
+
+  //add measurement noise covariance matrix
+  MatrixXd R = MatrixXd(n_z_,n_z_);
+  R <<    std_radr_*std_radr_, 0, 0,
+    0, std_radphi_*std_radphi_, 0,
+    0, 0,std_radrd_*std_radrd_;
+  S = S + R;
+
+  *z_out = z_pred;
+  *S_out = S;
+  *Zsig_out = Zsig;
+}
+
+/*
+ * Transform prediction to radar measurement space
+ */
+void UKF::PredictLidarMeasurement(VectorXd* z_out,MatrixXd* S_out,MatrixXd* Zsig_out) {
+
+  MatrixXd Zsig = MatrixXd(n_z_, 2 * n_aug_ + 1);
+
+  for(int i = 0; i < 2 * n_aug_ + 1; i++) {
+
+    double p_x = Xsig_pred_(0,i);
+    double p_y = Xsig_pred_(1,i);
+    double v = Xsig_pred_(2,i);
+    double yaw = Xsig_pred_(3,i);
+
+    double v1 = cos(yaw)*v;
+    double v2 = sin(yaw)*v;
+
+    //Measurement model
+    Zsig(0,i) = p_x;
+    Zsig(1,i) = p_y;
+    Zsig(2,i) = v1;
+    Zsig(3,i) = v2;
+  }
+
+  //Mean predicted measurement
+  VectorXd z_pred = VectorXd(n_z_);
+  z_pred.fill(0.0);
+  for(int i = 0;i < 2 * n_aug_ + 1;i++) {
+    z_pred = z_pred + weights_(i) * Zsig.col(i);
+  }
+
+  //Measurement covariance matrix S
+  MatrixXd S = MatrixXd(n_z_,n_z_);
+  S.fill(0.0);
+  for(int i = 0; i < 2 * n_aug_ + 1; i++) {
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+
+    //angle normalization
+    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+    S = S + weights_(i) * z_diff * z_diff.transpose();
+  }
+
+  //add measurement noise covariance matrix
+  MatrixXd R = MatrixXd(n_z_,n_z_);
+  R <<    std_radr_*std_radr_, 0, 0,
+    0, std_radphi_*std_radphi_, 0,
+    0, 0,std_radrd_*std_radrd_;
+  S = S + R;
+
+  *z_out = z_pred;
+  *S_out = S;
+  *Zsig_out = Zsig;
+}
 
 
+void UKF::UpdateState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig,VectorXd* x_out,MatrixXd* P_out) {
 
+  //create matrix for cross correlation Tc
+  MatrixXd Tc = MatrixXd(n_x_, n_z_);
+
+   //calculate cross correlation matrix
+  Tc.fill(0.0);
+  for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //2n+1 simga points
+
+    //residual
+    VectorXd z_diff = Zsig.col(i) - z_pred;
+    //angle normalization
+    while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+    while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+    // state difference
+    VectorXd x_diff = Xsig_pred_.col(i) - x_;
+    //angle normalization
+    while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
+    while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
+
+    Tc = Tc + weights_(i) * x_diff * z_diff.transpose();
+  }
+
+  //Kalman gain K;
+  MatrixXd K = Tc * S.inverse();
+
+  //residual
+  VectorXd z_diff = z - z_pred;
+
+  //angle normalization
+  while (z_diff(1)> M_PI) z_diff(1)-=2.*M_PI;
+  while (z_diff(1)<-M_PI) z_diff(1)+=2.*M_PI;
+
+  //update state mean and covariance matrix
+  x_ = x_ + K * z_diff;
+  P_ = P_ - K*S*K.transpose();
+}

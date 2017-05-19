@@ -74,6 +74,9 @@ public:
   ///* the current NIS for laser
   double NIS_laser_;
 
+  //Measurement dimension
+  int n_z_;
+
   /**
    * Constructor
    */
@@ -128,11 +131,24 @@ public:
     Predict Mean and Covariance of the Predicted State
   */
   void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
-  
+
+  /*
+   * Transform prediction to radar measurement space
+  */
+  void PredictRadarMeasurement(VectorXd* z_out,MatrixXd* S_out,MatrixXd* Zsig_out);
+
+   /*
+   * Transform prediction to Lidar measurement space
+  */
+  void PredictLidarMeasurement(VectorXd* z_out,MatrixXd* S_out,MatrixXd* Zsig_out);
+
+  /*
+    Update State
+  */
+  void UpdateState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig,VectorXd* x_out,MatrixXd* P_out);
   
 
-  
-  
+    
 };
 
 #endif /* UKF_H */
