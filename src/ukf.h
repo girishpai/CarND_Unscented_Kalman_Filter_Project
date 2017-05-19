@@ -17,6 +17,9 @@ public:
   ///* initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
+  // previous timestamp
+  long long previous_timestamp_;
+
   ///* if this is false, laser measurements will be ignored (except for init)
   bool use_laser_;
 
@@ -77,6 +80,7 @@ public:
   //Measurement dimension
   int n_z_;
 
+
   /**
    * Constructor
    */
@@ -130,7 +134,7 @@ public:
   /*
     Predict Mean and Covariance of the Predicted State
   */
-  void PredictMeanAndCovariance(VectorXd* x_out, MatrixXd* P_out);
+  void PredictMeanAndCovariance();
 
   /*
    * Transform prediction to radar measurement space
@@ -145,7 +149,7 @@ public:
   /*
     Update State
   */
-  void UpdateState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig,VectorXd* x_out,MatrixXd* P_out);
+  void UpdateState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig);
   
 
     
