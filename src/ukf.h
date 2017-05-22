@@ -14,6 +14,8 @@ using Eigen::VectorXd;
 class UKF {
 public:
 
+  long index_;
+
   ///* initially set to false, set to true in first call of ProcessMeasurement
   bool is_initialized_;
 
@@ -121,6 +123,9 @@ public:
 
  private :
 
+  double NormalizeAngle(double angle);
+  
+
   /*
    * Generate Augmented Sigma Points
    */
@@ -149,7 +154,8 @@ public:
   /*
     Update State
   */
-  void UpdateState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig);
+  void UpdateRadarState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig);
+  void UpdateLidarState(VectorXd z,VectorXd z_pred,MatrixXd S,MatrixXd Zsig);
   
 
     

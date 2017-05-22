@@ -1,6 +1,6 @@
 #include <iostream>
 #include "tools.h"
-
+using namespace std;
 using Eigen::VectorXd;
 using Eigen::MatrixXd;
 using std::vector;
@@ -31,6 +31,13 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   for(unsigned int i=0; i < estimations.size(); ++i){
 
     VectorXd residual = estimations[i] - ground_truth[i];
+
+    /*
+    if (fabs(residual(1)) > 30) {
+      cout << " Index : " << i << " has high errors = " <<fabs(residual(1))<<endl;
+      
+    }
+    */
 
     //coefficient-wise multiplication
     residual = residual.array()*residual.array();
