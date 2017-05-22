@@ -30,10 +30,10 @@ UKF::UKF() {
  
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3;
+  std_a_ = 2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.6;
+  std_yawdd_ = 0.5;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -83,9 +83,9 @@ UKF::UKF() {
 
   P_ << 1,0,0,0,0,
     0,1,0,0,0,
-    0,0,1000,0,0,
-    0,0,0,1000,0,
-    0,0,0,0,1000;
+    0,0,1,0,0,
+    0,0,0,1,0,
+    0,0,0,0,1;
 
 
 }
@@ -125,34 +125,25 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     x_ << px,py,0,0,0;
     is_initialized_ = true;
     previous_timestamp_ = meas_package.timestamp_;
-
-    //cout << "Initial x_ :\n" << x_<<endl;
  
     return;
   }
 
   double dt = (meas_package.timestamp_ - previous_timestamp_) / 1000000.0;	//dt - expressed in seconds
-  //cout << "dt = " << dt << endl;
+  
   previous_timestamp_ = meas_package.timestamp_;
  
   Prediction(dt);
-  //cout << "Index : " << index_ << endl;
-  //cout << " After prediction x: \n " << x_<<endl;
-  //cout << " After prediction p: \n " << P_<<endl;
-
-  if(meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+  
+  if(meas_package.sensor_type_ == MeasurementPackage::RADAR && use_radar_ == true) {
     UpdateRadar(meas_package);
   }
 
-  else if(meas_package.sensor_type_ == MeasurementPackage::LASER) {
+  else if(meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_ == true) {
     UpdateLidar(meas_package);
   }
-  //cout << " After update x: \n " << x_<<endl<<endl;
-  //cout << " After update p: \n " << P_<<endl<<endl;
 
-  index_ += 1;
-  //  cout << " State : \n" << x_ << endl;
-  //cout << " Cov : \n" << P_ << endl;
+
 }
 
 /**
@@ -272,7 +263,7 @@ void UKF::SigmaPointPrediction(MatrixXd Xsig_aug,double delta_t) {
   for(int i = 0; i < 2 *n_aug_+1;i++) {
     double p_x = Xsig_aug(0,i);
     double p_y = Xsig_aug(1,i);
-    double v = Xsig_aug(0,2);
+    double v = Xsig_aug(2,i);
     double yaw = Xsig_aug(3,i);
     double yawd = Xsig_aug(4,i);
     double nu_a = Xsig_aug(5,i);
@@ -311,9 +302,7 @@ void UKF::SigmaPointPrediction(MatrixXd Xsig_aug,double delta_t) {
     Xsig_pred_(2,i) = v_p;
     Xsig_pred_(3,i) = yaw_p;
     Xsig_pred_(4,i) = yawd_p;
-    //cout << " i : " << i <<endl;
-    //cout << "Augmented sigma point : \n" << Xsig_aug.col(i) <<endl;
-    //cout << "Predicted sigma point : \n" << Xsig_pred_.col(i) <<endl;
+   
   } 
 }
 

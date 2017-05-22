@@ -32,12 +32,6 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
 
     VectorXd residual = estimations[i] - ground_truth[i];
 
-    /*
-    if (fabs(residual(1)) > 30) {
-      cout << " Index : " << i << " has high errors = " <<fabs(residual(1))<<endl;
-      
-    }
-    */
 
     //coefficient-wise multiplication
     residual = residual.array()*residual.array();
